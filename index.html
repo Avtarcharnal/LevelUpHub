@@ -1,1 +1,190 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Level Up Hub</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, Segoe UI, Roboto, sans-serif; }
+  body { background: linear-gradient(180deg, #0b1630, #0a0f1f); color: #fff; min-height: 100vh; padding-bottom: 90px; }
+  .top { display: flex; justify-content: space-between; align-items: center; padding: 14px 16px; }
+  .user { background: #2f6df6; border-radius: 20px; padding: 8px 14px; font-weight: 600; }
+  .level { background: #b6f03a; color: #111; border-radius: 20px; padding: 8px 14px; font-weight: 700; }
+  .balance { padding: 4px 16px; font-size: 22px; font-weight: 700; }
+  .income-row { display: flex; gap: 8px; padding: 8px 16px; font-size: 12px; color: #aab; }
+  .income-row span { background: #1a2340; padding: 5px 10px; border-radius: 12px; }
+  .counter { padding: 6px 16px; font-size: 44px; font-weight: 800; }
+  .counter small { color: #6b7694; }
+  .btns { display: flex; gap: 10px; padding: 8px 16px; }
+  .btn { flex: 1; border: none; border-radius: 16px; padding: 14px; font-size: 15px; font-weight: 700; cursor: pointer; }
+  .green { background: #b6f03a; color: #111; }
+  .dark { background: #1a2340; color: #fff; }
+  .blue { background: #2f6df6; color: #fff; }
+  .cards { display: flex; gap: 10px; padding: 12px 16px; }
+  .card { flex: 1; background: #141c33; border-radius: 18px; padding: 16px; }
+  .card h3 { font-size: 14px; color: #aab; }
+  .card .num { font-size: 28px; font-weight: 800; margin-top: 6px; }
+  .panel { margin: 8px 16px; background: #141c33; border-radius: 20px; padding: 18px; }
+  .panel h2 { font-size: 18px; margin-bottom: 6px; }
+  .panel p { color: #aab; font-size: 13px; margin-bottom: 12px; }
+  .nav { position: fixed; bottom: 0; left: 0; right: 0; background: #101830; display: flex; justify-content: space-around; padding: 10px 0 14px; }
+  .nav div { text-align: center; font-size: 11px; color: #aab; cursor: pointer; }
+  .nav div.active { color: #b6f03a; }
+  .nav .ico { font-size: 20px; display: block; }
+  .page { display: none; }
+  .page.show { display: block; }
+  .row { display: flex; justify-content: space-between; padding: 10px 16px; border-bottom: 1px solid #1d2748; }
+  input { width: 100%; padding: 12px; border-radius: 12px; border: none; background: #1a2340; color: #fff; margin-bottom: 10px; }
+</style>
+</head>
+<body>
 
+<div class="top">
+  <div class="user" id="username">Player</div>
+  <div class="level" id="level">Level 1</div>
+</div>
+
+<!-- HOME -->
+<div class="page show" id="home">
+  <div class="balance">💎 <span id="totalGems">50</span> Gems <span style="font-size:14px;color:#aab">Total balance</span></div>
+  <div class="income-row">
+    <span>⏱ <b id="perHour">0.5</b> / hr</span>
+    <span>📅 <b id="perDay">12</b> / day</span>
+    <span>🗓 <b id="perMonth">360</b> / month</span>
+  </div>
+  <div class="counter">💎<span id="live">0.000000</span></div>
+  <div class="btns">
+    <button class="btn green" onclick="claim()">Claim gems</button>
+    <button class="btn dark" onclick="alert('हर दिन Claim दबाइए, दोस्तों को बुलाइए और Tasks पूरे कीजिए, इनकम बढ़ती जाएगी।')">How to earn?</button>
+  </div>
+  <div class="cards">
+    <div class="card"><h3>Mining gems</h3><div class="num" id="miningGems">50</div></div>
+    <div class="card"><h3>Referral gems</h3><div class="num" id="refGems">0</div></div>
+  </div>
+  <div class="btns">
+    <button class="btn blue" onclick="show('tasks')">Tasks</button>
+    <button class="btn green" onclick="show('withdraw')">Withdraw</button>
+  </div>
+  <div class="panel">
+    <h2>+10 gems हर नए दोस्त पर</h2>
+    <p>अपना रेफ़रल लिंक भेजिए। जब दोस्त जुड़ेगा तो आपको बोनस जेम्स मिलेंगे, और आपकी रोज़ की माइनिंग भी बढ़ेगी।</p>
+    <button class="btn blue" style="width:100%" onclick="show('friends')">Invite friends</button>
+  </div>
+</div>
+
+<!-- FRIENDS -->
+<div class="page" id="friends">
+  <div class="panel">
+    <h2>Friends</h2>
+    <p>आपका रेफ़रल लिंक:</p>
+    <input id="reflink" readonly>
+    <button class="btn green" style="width:100%" onclick="copyLink()">Copy link</button>
+  </div>
+  <div class="row"><span>जुड़े हुए दोस्त</span><b id="friendCount">0</b></div>
+  <div class="row"><span>रेफ़रल से कमाए जेम्स</span><b id="friendGems">0</b></div>
+</div>
+
+<!-- TASKS -->
+<div class="page" id="tasks">
+  <div class="panel"><h2>Tasks</h2><p>टास्क पूरा करो, जेम्स पाओ।</p></div>
+  <div class="row"><span>Channel join करो</span><button class="btn green" style="flex:none;padding:8px 14px" onclick="doTask(20)">+20</button></div>
+  <div class="row"><span>Daily check-in</span><button class="btn green" style="flex:none;padding:8px 14px" onclick="doTask(5)">+5</button></div>
+</div>
+
+<!-- WITHDRAW -->
+<div class="page" id="withdraw">
+  <div class="panel">
+    <h2>Withdraw</h2>
+    <p>विड्रॉल रिक्वेस्ट डालिए। एडमिन चेक करके अप्रूव करेगा। न्यूनतम जेम्स की शर्त नीचे दी गई है।</p>
+    <p>Minimum: <b>500 gems</b></p>
+    <input id="wAmount" type="number" placeholder="कितने gems निकालने हैं">
+    <input id="wDetail" placeholder="आपका UPI या वॉलेट डिटेल">
+    <button class="btn green" style="width:100%" onclick="requestWithdraw()">Request withdraw</button>
+  </div>
+</div>
+
+<!-- ACCOUNT -->
+<div class="page" id="account">
+  <div class="panel"><h2>Account</h2><p id="accName">Player</p></div>
+  <div class="row"><span>Level</span><b id="accLevel">1</b></div>
+  <div class="row"><span>कुल जेम्स</span><b id="accGems">50</b></div>
+</div>
+
+<div class="nav">
+  <div class="active" onclick="show('home',this)"><span class="ico">🔁</span>Trade</div>
+  <div onclick="show('friends',this)"><span class="ico">👥</span>Friends</div>
+  <div onclick="show('tasks',this)"><span class="ico">🎁</span>Gifts</div>
+  <div onclick="show('account',this)"><span class="ico">👤</span>Account</div>
+</div>
+
+<script>
+  const tg = window.Telegram.WebApp;
+  tg.expand();
+  const user = (tg.initDataUnsafe && tg.initDataUnsafe.user) || { id: 0, first_name: 'Player' };
+
+  // अभी ये डेटा सिर्फ़ फ़ोन में है। असली बॉट से जोड़ने के लिए इन्हें अपने सर्वर से लाना होगा।
+  let state = { gems: 50, perDay: 12, refGems: 0, friends: 0, level: 1 };
+
+  document.getElementById('username').textContent = user.first_name;
+  document.getElementById('accName').textContent = user.first_name;
+  document.getElementById('reflink').value = 'https://t.me/LevelUpHub_official_bot?start=' + user.id;
+
+  function render() {
+    document.getElementById('totalGems').textContent = Math.floor(state.gems);
+    document.getElementById('miningGems').textContent = Math.floor(state.gems - state.refGems);
+    document.getElementById('refGems').textContent = state.refGems;
+    document.getElementById('perDay').textContent = state.perDay;
+    document.getElementById('perHour').textContent = (state.perDay / 24).toFixed(2);
+    document.getElementById('perMonth').textContent = state.perDay * 30;
+    document.getElementById('friendCount').textContent = state.friends;
+    document.getElementById('friendGems').textContent = state.refGems;
+    document.getElementById('level').textContent = 'Level ' + state.level;
+    document.getElementById('accLevel').textContent = state.level;
+    document.getElementById('accGems').textContent = Math.floor(state.gems);
+  }
+
+  // लाइव टिकिंग काउंटर: हर सेकंड थोड़ा बढ़ता है
+  let pending = 0;
+  setInterval(() => {
+    pending += state.perDay / 86400;
+    document.getElementById('live').textContent = pending.toFixed(6);
+  }, 1000);
+
+  function claim() {
+    state.gems += pending;
+    pending = 0;
+    render();
+    tg.HapticFeedback && tg.HapticFeedback.notificationOccurred('success');
+  }
+
+  function doTask(n) { state.gems += n; render(); }
+
+  function copyLink() {
+    navigator.clipboard.writeText(document.getElementById('reflink').value);
+    alert('लिंक कॉपी हो गया');
+  }
+
+  function requestWithdraw() {
+    const amt = Number(document.getElementById('wAmount').value);
+    const detail = document.getElementById('wDetail').value.trim();
+    if (amt < 500) { alert('न्यूनतम 500 gems चाहिए'); return; }
+    if (amt > state.gems) { alert('इतने gems नहीं हैं'); return; }
+    if (!detail) { alert('UPI या वॉलेट डिटेल डालिए'); return; }
+    // रिक्वेस्ट आपके बॉट को भेजी जाती है, एडमिन चेक करके मैन्युअली अप्रूव करेगा
+    tg.sendData(JSON.stringify({ type: 'withdraw', amount: amt, detail: detail }));
+  }
+
+  function show(id, el) {
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('show'));
+    document.getElementById(id).classList.add('show');
+    if (el) {
+      document.querySelectorAll('.nav div').forEach(d => d.classList.remove('active'));
+      el.classList.add('active');
+    }
+  }
+
+  render();
+</script>
+</body>
+</html>
